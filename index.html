@@ -12,5 +12,17 @@
     style="width:100%;height:100vh;border:0"
     title="MindBattery">
   </iframe>
+  <script src="https://mindbattery-multiplayer.onrender.com/socket.io/socket.io.js"></script>
+<script>
+  const socket = io("https://mindbattery-multiplayer.onrender.com");
+
+  socket.on("connect", () => {
+    console.log("MindBattery Multiplayer verbunden!");
+  });
+
+  socket.on("connect_error", (error) => {
+    console.error("Verbindung fehlgeschlagen:", error.message);
+  });
+</script>
 </body>
 </html>
