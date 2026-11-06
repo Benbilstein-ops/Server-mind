@@ -1,0 +1,59 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MindBattery Paintball</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101729;color:white;font-family:Arial,sans-serif;text-align:center}
+header{padding:14px;background:#202d48}
+h1{margin:4px;color:#78f0c0}
+#game{display:block;width:min(96vw,800px);height:auto;margin:12px auto;background:#243d36;border:3px solid #78f0c0;border-radius:12px;touch-action:none}
+.controls{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;padding:8px}
+button{font-size:17px;font-weight:bold;padding:13px 19px;border:0;border-radius:12px;background:#78f0c0;color:#101729}
+#status{padding:8px}
+</style>
+</head>
+<body>
+<header><h1>🎨 MINDBATTERY PAINTBALL</h1><div>Bewege dich, ziele und sammle Punkte!</div></header>
+<div id="status">Punkte: <span id="score">0</span> · Verbinde Server …</div>
+<canvas id="game" width="800" height="500"></canvas>
+<div class="controls">
+<button id="up">⬆️</button><button id="left">⬅️</button>
+<button id="down">⬇️</button><button id="right">➡️</button>
+<button id="shoot">🎨 Schießen</button>
+<button id="restart">Neustart</button>
+</div>
+<script src="https://mindbattery-multiplayer.onrender.com/socket.io/socket.io.js"></script>
+<script>
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const socket=typeof io==='function'?io('https://mindbattery-multiplayer.onrender.com'):null;
+const status=document.getElementById('status');
+if(socket){
+ socket.on('connect',()=>status.textContent='🟢 Server verbunden · Punkte: '+score);
+ socket.on('connect_error',()=>status.textContent='🟠 Server nicht erreichbar – lokales Spiel läuft');
+}else status.textContent='🟠 Offline-Spiel';
+let player={x:400,y:250},score=0,shots=[],targets=[];
+let keys={};
+function reset(){score=0;player={x:400,y:250};shots=[];targets=[];for(let i=0;i<8;i++)targets.push({x:50+Math.random()*700,y:50+Math.random()*400,r:14,color:['#ff668c','#ffd166','#70b9ff'][i%3]});draw()}
+function move(dx,dy){player.x=Math.max(20,Math.min(780,player.x+dx));player.y=Math.max(20,Math.min(480,player.y+dy));draw()}
+function shoot(){let t=targets[0];if(!t)return;shots.push({x:player.x,y:player.y,tx:t.x,ty:t.y,life:1});if(Math.hypot(player.x-t.x,player.y-t.y)<240){targets.shift();score+=10;document.getElementById('score').textContent=score;if(!targets.length){alert('Gewonnen! Super gespielt!');reset()}}draw()}
+function draw(){
+ctx.clearRect(0,0,800,500);ctx.fillStyle='#29473c';ctx.fillRect(0,0,800,500);
+ctx.strokeStyle='#44695a';for(let x=0;x<800;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,500);ctx.stroke()}for(let y=0;y<500;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(800,y);ctx.stroke()}
+ctx.fillStyle='#64748b';[[130,100,90,40],[570,90,120,45],[220,350,100,45],[540,340,90,50],[370,190,60,45]].forEach(a=>ctx.fillRect(...a));
+targets.forEach(t=>{ctx.fillStyle=t.color;ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='white';ctx.beginPath();ctx.arc(t.x-4,t.y-4,4,0,Math.PI*2);ctx.fill()});
+shots.forEach(s=>{ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.tx,s.ty,6,0,Math.PI*2);ctx.fill()});
+ctx.fillStyle='#78f0c0';ctx.beginPath();ctx.arc(player.x,player.y,16,0,Math.PI*2);ctx.fill();ctx.fillStyle='#101729';ctx.fillRect(player.x-5,player.y-5,10,10);
+ctx.fillStyle='white';ctx.font='16px Arial';ctx.fillText('Ziele: '+targets.length,16,24);
+}
+[['up',0,-18],['down',0,18],['left',-18,0],['right',18,0]].forEach(([id,dx,dy])=>{let b=document.getElementById(id);b.addEventListener('click',()=>move(dx,dy))});
+document.getElementById('shoot').onclick=shoot;
+document.getElementById('restart').onclick=reset;
+window.addEventListener('keydown',e=>{if(e.key==='ArrowUp')move(0,-18);if(e.key==='ArrowDown')move(0,18);if(e.key==='ArrowLeft')move(-18,0);if(e.key==='ArrowRight')move(18,0);if(e.code==='Space')shoot()});
+reset();
+</script>
+</body>
+</html>
